@@ -1,7 +1,6 @@
 package de.alexander_hanschke.daemon.watch;
 
 import java.io.IOException;
-import static java.nio.file.StandardWatchEventKind.ENTRY_CREATE;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Paths;
@@ -25,8 +24,7 @@ public class FolderWatcher implements Runnable {
 
     private WatchService watchService;    
 
-    private final List<WatchEventListener> listeners =
-            new ArrayList<WatchEventListener>();
+    private final List<WatchEventListener> listeners = new ArrayList<>();
 
     public FolderWatcher(Properties properties) {
         this.properties = properties;
@@ -36,11 +34,12 @@ public class FolderWatcher implements Runnable {
     public void run() {
         System.out.println(
                 String.format("daemon started - watching folder %s for changes of kind %s",
-                properties.getProperty("watch.folder"), ENTRY_CREATE));
+                properties.getProperty("watch.folder"), properties.get("watch.event")));
 
         try {
             watchService = FileSystems.getDefault().newWatchService();
-            watchKey = Paths.get(properties.getProperty("watch.folder")).register(watchService, ENTRY_CREATE);
+            watchKey = Paths.get(properties.getProperty("watch.folder")).register(watchService,
+                    (WatchEvent.Kind) properties.get("watch.event"));
         } catch (IOException e) {
             throw new RuntimeException("init failed!", e);
         }
@@ -70,7 +69,7 @@ public class FolderWatcher implements Runnable {
         List<WatchEventListener> currentListeners;
 
         synchronized(listeners) {
-            currentListeners = new ArrayList<WatchEventListener>(listeners);
+            currentListeners = new ArrayList<>(listeners);
         }
 
         for (WatchEventListener listener : currentListeners) {
